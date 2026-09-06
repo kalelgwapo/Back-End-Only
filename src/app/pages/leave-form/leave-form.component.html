@@ -1,0 +1,88 @@
+<section class="page">
+  @if (notFound) {
+    <div class="missing">
+      <h1>Leave application not found</h1>
+      <button type="button" class="ghost-btn" (click)="cancel()">Back to list</button>
+    </div>
+  } @else {
+    <h1>{{ isEditMode ? 'Edit Leave Application' : 'Submit a Leave Request' }}</h1>
+
+    <form class="leave-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="grid">
+        <label class="box">
+          <select formControlName="applicant">
+            <option value="" disabled>Applicant</option>
+            @for (employee of employees; track employee) {
+              <option [value]="employee">{{ employee }}</option>
+            }
+          </select>
+          <span class="icon chevron" aria-hidden="true"></span>
+        </label>
+
+        <label class="box">
+          <select formControlName="manager">
+            <option value="" disabled>Manager</option>
+            @for (manager of managers; track manager) {
+              <option [value]="manager">{{ manager }}</option>
+            }
+          </select>
+          <span class="icon chevron" aria-hidden="true"></span>
+        </label>
+
+        <label class="box leave-type">
+          <select formControlName="leaveType">
+            <option value="" disabled>Leave Type</option>
+            @for (leaveType of leaveTypes; track leaveType.value) {
+              <option [value]="leaveType.value">{{ leaveType.label }}</option>
+            }
+          </select>
+          <span class="icon chevron" aria-hidden="true"></span>
+        </label>
+
+        <label class="box">
+          <span class="floating" [class.visible]="!form.controls.startDate.value">Start date</span>
+          <input type="date" formControlName="startDate" />
+          <span class="icon calendar" aria-hidden="true"></span>
+        </label>
+
+        <label class="box">
+          <span class="floating" [class.visible]="!form.controls.endDate.value">End date</span>
+          <input type="date" formControlName="endDate" />
+          <span class="icon calendar" aria-hidden="true"></span>
+        </label>
+
+        <label class="box">
+          <span class="floating" [class.visible]="!form.controls.returnDate.value">Return date</span>
+          <input type="date" formControlName="returnDate" />
+          <span class="icon calendar" aria-hidden="true"></span>
+        </label>
+
+        <label class="box">
+          <input
+            type="number"
+            min="1"
+            formControlName="numberOfDays"
+            placeholder="Number of days"
+          />
+        </label>
+
+        <label class="box comments">
+          <input type="text" formControlName="comments" placeholder="General comments" />
+        </label>
+      </div>
+
+      @if (submitted && form.invalid) {
+        <p class="error" role="alert">Please complete all required fields before submitting.</p>
+      }
+
+      @if (leaveTypeLimitError) {
+        <p class="error" role="alert">{{ leaveTypeLimitError }}</p>
+      }
+
+      <div class="actions">
+        <button type="submit" class="action-btn">Submit</button>
+        <button type="button" class="action-btn" (click)="cancel()">Cancel</button>
+      </div>
+    </form>
+  }
+</section>

@@ -1,0 +1,48 @@
+<section class="page">
+  <header class="page-header">
+    <div>
+      <h1>Leave Applications</h1>
+      <p>Review existing requests or submit a new one.</p>
+    </div>
+    <a routerLink="/leaves/new" class="primary-btn">Submit a Leave Request</a>
+  </header>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Applicant</th>
+          <th>Manager</th>
+          <th>Leave Type</th>
+          <th>Start date</th>
+          <th>End date</th>
+          <th>Return date</th>
+          <th>Days</th>
+          <th>Comments</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (leave of applications(); track leave.id) {
+          <tr>
+            <td>
+              <a [routerLink]="['/leaves', leave.id]" class="id-link">{{ leave.id }}</a>
+            </td>
+            <td>{{ leave.applicant }}</td>
+            <td>{{ leave.manager }}</td>
+            <td>{{ leaveTypeName(leave.leaveType) }}</td>
+            <td>{{ leave.startDate | date: 'MMM d, y' }}</td>
+            <td>{{ leave.endDate | date: 'MMM d, y' }}</td>
+            <td>{{ leave.returnDate | date: 'MMM d, y' }}</td>
+            <td>{{ leave.numberOfDays }}</td>
+            <td class="comments">{{ leave.comments || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="empty">No leave applications yet.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

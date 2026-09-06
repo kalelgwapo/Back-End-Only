@@ -1,0 +1,11 @@
+@if (auth.isLoggedIn()) {
+  <header class="app-header">
+    <a routerLink="/leaves" class="brand">Leave Management</a>
+    <div class="session">
+      <span>{{ auth.currentUser()?.displayName }}</span>
+      <button type="button" (click)="logout()">Log out</button>
+    </div>
+  </header>
+}
+
+<router-outlet />
