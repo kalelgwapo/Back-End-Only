@@ -21,17 +21,17 @@ export class LoginComponent {
     password: ['', Validators.required]
   });
 
-  submit(): void {
+  async submit(): Promise<void> {
     this.errorMessage = '';
     this.form.markAllAsTouched();
 
     if (this.form.invalid) {
-      this.errorMessage = 'Please enter your username and password.';
+      this.errorMessage = 'Please enter a username and password.';
       return;
     }
 
     const { username, password } = this.form.getRawValue();
-    const success = this.auth.login(username, password);
+    const success = await this.auth.login(username, password);
 
     if (!success) {
       this.errorMessage = 'Invalid username or password.';

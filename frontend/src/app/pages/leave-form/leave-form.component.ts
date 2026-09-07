@@ -3,13 +3,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
-  EMPLOYEES,
   LEAVE_TYPES,
   LeaveType,
-  MANAGERS,
   leaveTypeMaxDays
 } from '../../models/leave-application.model';
+import { ApiUser } from '../../models/user.model';
 import { LeaveService } from '../../services/leave.service';
+import { UserService } from '../../services/user.service';
+import { LeaveApplicationRequest } from '../../models/leave-application.model';
 
 @Component({
   selector: 'app-leave-form',
@@ -22,10 +23,12 @@ export class LeaveFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly leaveService = inject(LeaveService);
+  private readonly userService = inject(UserService);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly employees = EMPLOYEES;
-  readonly managers = MANAGERS;
+  employees: string[] = [];
+  managers: string[] = [];
+  private users: ApiUser[] = [];
   readonly leaveTypes = LEAVE_TYPES;
 
   editingId: number | null = null;
@@ -64,6 +67,17 @@ export class LeaveFormComponent implements OnInit {
       this.form.patchValue(existing);
     }
 
+    this.userService
+      .getUsers()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (users) => this.setUsers(users),
+        error: () => {
+          this.employees = [];
+          this.managers = [];
+        }
+      });
+
     this.form.controls.startDate.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.syncCalculatedFields());
@@ -95,24 +109,45 @@ export class LeaveFormComponent implements OnInit {
       return;
     }
 
-    const payload = {
-      applicant: value.applicant,
-      manager: value.manager,
-      leaveType: value.leaveType as LeaveType,
+    const applicant = this.users.find((user) => user.fullName === value.applicant);
+    const manager = this.users.find((user) => user.fullName === value.manager);
+    const leaveType = this.leaveTypes.find((option) => option.value === value.leaveType);
+    if (!applicant || !manager || !leaveType) {
+      this.leaveTypeLimitError = 'Please select a valid applicant, manager, and leave type.';
+      return;
+    }
+
+    const payload: LeaveApplicationRequest = {
+      applicantId: applicant.id,
+      managerId: manager.id,
+      leaveTypeId: leaveType.id,
       startDate: value.startDate,
       endDate: value.endDate,
       returnDate: value.returnDate,
-      numberOfDays,
-      comments: value.comments.trim()
+      requestedDays: numberOfDays,
+      generalComments: value.comments.trim()
     };
 
     if (this.editingId) {
-      this.leaveService.update(this.editingId, payload);
+      this.leaveService.update(this.editingId, {
+        applicant: value.applicant,
+        manager: value.manager,
+        leaveType: value.leaveType as LeaveType,
+        startDate: value.startDate,
+        endDate: value.endDate,
+        returnDate: value.returnDate,
+        numberOfDays,
+        comments: value.comments.trim()
+      });
+      void this.router.navigate(['/leaves']);
     } else {
-      this.leaveService.create(payload);
+      this.leaveService.create(payload).subscribe({
+        next: () => void this.router.navigate(['/leaves']),
+        error: () => {
+          this.leaveTypeLimitError = 'The leave request could not be submitted.';
+        }
+      });
     }
-
-    void this.router.navigate(['/leaves']);
   }
 
   cancel(): void {
@@ -143,6 +178,16 @@ export class LeaveFormComponent implements OnInit {
       nextDay.setDate(nextDay.getDate() + 1);
       this.form.controls.returnDate.setValue(this.toInputDate(nextDay), { emitEvent: false });
     }
+  }
+
+  private setUsers(users: ApiUser[]): void {
+    this.users = users;
+    this.employees = users
+      .filter((user) => user.role.toLowerCase() === 'employee')
+      .map((user) => user.fullName);
+    this.managers = users
+      .filter((user) => user.role.toLowerCase() === 'manager')
+      .map((user) => user.fullName);
   }
 
   private toInputDate(date: Date): string {
